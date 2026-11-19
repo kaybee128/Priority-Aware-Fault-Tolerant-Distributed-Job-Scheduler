@@ -1,0 +1,52 @@
+spring:
+  application:
+    name: job-scheduler
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/scheduler}
+    username: ${DB_USER:scheduler}
+    password: ${DB_PASSWORD:scheduler}
+  flyway:
+    enabled: true
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    consumer:
+      group-id: job-workers
+      auto-offset-reset: earliest
+      enable-auto-commit: false
+      max-poll-records: 1   # one job per poll so priority order is applied per job
+    listener:
+      ack-mode: record
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+  task:
+    scheduling:
+      pool:
+        size: 4
+
+server:
+  port: ${PORT:8080}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+
+scheduler:
+  worker-id: ${WORKER_ID:}
+  lease-ttl-ms: ${LEASE_TTL_MS:10000}
+  heartbeat-interval-ms: 3000
+  reaper-interval-ms: 3000
+  dispatch-interval-ms: 500
+  outbox-interval-ms: 200
+  backoff:
+    base-ms: 2000
+    max-ms: 60000
+  worker:
+    slots: 8          # jobs running at once per worker replica, shared by all lanes
+  lanes:            # listener threads per worker replica, per priority lane (must be >= slots)
+    high: 8
+    normal: 8
+    low: 8
